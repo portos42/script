@@ -1,0 +1,12 @@
+#!/bin/bash
+echo -e "tarenta12345678\ntarenta12345678" | passwd test
+echo -e "tarenta12345678\ntarenta12345678"| passwd test1
+echo -e "tarenta12345679\ntarenta12345679"| passwd test2
+echo -e "tarenta12345680\ntarenta12345680"| passwd test3
+echo -e "tarenta12345681\ntarenta12345681"| passwd test4
+echo -e "tarenta12345682\ntarenta12345682"| passwd test5
+echo -e "tarenta12345683\ntarenta12345683"| passwd test6
+echo -e "tarenta12345684\ntarenta12345684"| passwd test7
+echo -e "tarenta12345685\ntarenta12345685"| passwd test8
+echo -e "tarenta12345686\ntarenta12345686"| passwd test9
+echo -e "tarenta12345687\ntarenta12345687"| passwd test10

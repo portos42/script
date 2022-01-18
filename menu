@@ -1,0 +1,55 @@
+#!/bin/bash
+# Le script va checker et formaliser les infos des cartes réseaux
+# Il va accepter un parametre: le nom de la carte réseau
+# Un log sera créé automatiquement sous /tmp/reseau_date.log
+
+#System d argument
+#echo "Nombre d'arguments ... :  "$#
+#echo "Les arguments sont ... :  "$*
+#echo "Le second argument est :  "$2
+##echo "Et le code de retour du dernier echo est :  "$?
+
+PS3='Siouplait choisissez dans la liste ci dessous : '
+options=("nom du serveur" "info cpu" "Nom de l'OS"  "Quit")
+select opt in "${options[@]}"
+do
+    case $opt in
+        "nom du serveur")
+            echo "Tu as choisi $REPLY"
+	    echo
+            echo ==================
+            echo "      $HOSTNAME"
+            echo ==================
+            echo
+	    ;;
+        "info cpu")
+            echo "Tu as choisi $REPLY"
+            echo
+            echo ==================
+            echo "      $(lscpu)"
+            echo ==================
+            echo
+	    ;;
+        "Nom de l'OS")
+            echo "Tu as choisi $REPLY"
+            echo
+            echo ==================
+            echo "$(cat /etc/*release*)"
+            echo ==================
+            echo
+            ;;
+#       "calcul")
+#           echo "Tu as choisi $REPLY"
+#           echo
+#	    echo ==================
+#            read -n "combien ?" combien
+#	    echo (($combien + 5 ))
+#	    echo
+#            ;;
+        "Quit")
+            break
+            ;;
+        *) echo "invalid option $REPLY";;
+    esac
+
+done

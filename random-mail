@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# Tableau de noms des heureux élus
+liste=("Anthony TARENTA1" "Anthony TARENTA2" "Anthony TARENTA3" "Anthony TARENTA4" "Anthony TARENTA5" "Anthony TARENTA")
+
+# Randomisation
+#randomisation=$$$(date +%s)
+#randomisation_backup=$$$(date +%y)
+
+# Sélection d'un nom via le randomisateur
+heureux_elu=${liste[$RANDOM % ${#liste[@]}]}
+
+#echo "$(cat /root/script/Roulette/dernier_gagnant)"
+#echo "$heureux_elu"
+
+while [ "$(cat /root/script/Roulette/dernier_gagnant)" = "$heureux_elu" ]; do
+        heureux_elu=${liste[$RANDOM % ${#liste[@]}]}
+#       echo "$(cat /root/script/Roulette/dernier_gagnant)"
+#       echo "$heureux_elu"
+done
+
+heureux_elu_backup=${liste[$RANDOM % ${#liste[@]}]}
+
+while [ "$heureux_elu" = "$heureux_elu_backup" ]; do
+        heureux_elu_backup=${liste[$RANDOM % ${#liste[@]}]}
+done
+
+(
+echo "To: anthony.tarenta@cheops.fr"
+echo "From: support.infogerance@cheops.fr"
+echo "Subject: salut hello"
+echo "Content-Type: text/html"
+echo "<html><body><div style='font-family:"Calibri",sans-serif;color:#1F497D'>Bonjour,
+<br><br>
+L'heureux chanceux ayant été sélectionné pour participer au point prod ce jour est :
+<br><br>
+<font color="red">$heureux_elu</font>
+<br><br>
+Son backup en cas d'absence :
+<br><br>
+<font color="red">$heureux_elu_backup</font>
+<br><br>
+Cordialement,
+<br><br>
+Le désignateur masqué
+</div></body></html>"
+) | /usr/sbin/sendmail -t
+
+echo $heureux_elu > /root/script/Roulette/dernier_gagnant
+echo "La personne principal est $heureux_elu et le second est $heureux_elu_backup"

@@ -1,0 +1,37 @@
+#!/bin/sh
+#Variable check le dernier fichier hnet depuis j-2
+
+NEWFILE=$(ssh hen-axhntprbd04 "find /tmp/hnet.reorg_exec* -ctime -8")
+
+#condition, si newfile est absent ou vide alors message KO sion(else) message OK avec scp
+if [ -z $NEWFILE ]
+then
+echo "
+Bonjour
+
+Le fichier hnet.reorg_exec* est absent sur le serveur hen-axhntprbd04 .
+
+
+Cordialement,
+
+Support Infogérance."
+) | mutt -a $NEWFILE -s "rebuild automatique log $date"  -- InfogeranceN2Oracle@CHEOPS.FR
+
+else
+scp hen-axhntprbd04:"$NEWFILE" $NEWFILE
+(
+echo "
+Bonjour
+
+Le fichier $NEWFILE est bien présent sur le serveur hen-axhntprbd04 .
+
+Voici ci joint une copie de ce dernier.
+
+
+Cordialement,
+
+Support Infogérance."
+) | mutt -a $NEWFILE -s "rebuild automatique log $date" -c christelle.tomski@cheops.fr InfogeranceN2Oracle@CHEOPS.FR -- Dsi_production@henner.fr mfekhar@henner.com jjmarciniak@henner.com
+rm -f $NEWFILE
+fi
+

@@ -1,0 +1,45 @@
+#!/bin/bash
+# Le script va checker et formaliser les infos des cartes réseaux
+# Il va accepter un parametre: le nom de la carte réseau
+# Un log sera créé automatiquement sous /tmp/reseau_date.log
+
+#System d argument
+#echo "Nombre d'arguments ... :  "$#
+#echo "Les arguments sont ... :  "$*
+#echo "Le second argument est :  "$2
+##echo "Et le code de retour du dernier echo est :  "$?
+
+#Declaration de variable :
+
+
+
+declare -a tableau
+liste=$(ifconfig | grep mtu | awk -F: '{print $1}')
+
+for i in $liste; do
+tableau=( "${tableau[@]}" "$i" );
+done
+
+
+
+echo "Il y a ${#tableau[*]} cartes réseau"
+echo $liste
+echo
+echo "Voici la liste des cartes reseau: "
+echo
+
+## boucle 2 facon de faire :
+
+#for i in `seq 0 $((${#tableau[*]}-1))`; do 
+#cat /etc/sysconfig/network-scripts/ifcfg-${tableau[$i]} |tee -a /tmp/carte_reseau_info.log
+#echo;
+#done
+
+i=0
+while [ $i -lt ${#tableau[*]} ]; do
+cat /etc/sysconfig/network-scripts/ifcfg-${tableau[$i]} |tee -a /tmp/carte_reseau_info.log
+echo;
+i=$((i+1))
+done
+
+echo "Une copie des logs à cet emplacement /tmp/carte_reseau_info.log"
