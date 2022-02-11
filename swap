@@ -1,0 +1,141 @@
+#!/bin/bash
+
+# Script de résolution d'incident NTP Linux.
+# Auteur : Anthony TARENTA
+# Date : 11/02/2022
+
+###########
+###########
+#INFO DU SCRIPT :
+
+###########
+###########
+
+LANG=en_US.utf8
+
+### Un peu de couleur :
+RED='\e[31m' # Rouge
+GREEN='\e[32m' # Vert
+YELLOW='\e[33m' # Jaune
+NC='\e[0m' # No Color
+
+### Variable ###
+
+# Mémoire dispo
+free_mem="$(free | grep 'Mem:' | awk '{print $7}')"
+# Utilisation de la swap en cours
+used_swap="$(free | grep 'Swap:' | awk '{print $3}')"
+# Utilisation total de la swap
+total_swap=$(free |tr -s ' ' | sed '/^Swap/!d' | cut -d" " -f2)
+# Pourcentage d'utilisation de la swap
+pourc_swap=$(($used_swap*100 / $total_swap))
+# Nombre de fs swap
+swapnum="$(( $(cat /proc/swaps|wc -l) - 1 ))"
+
+
+
+
+### Fonction ###
+
+# Check de la mémoire/swap
+check(){
+    case $pourc_swap in
+    0)        echo -e "Mémoire libre:\t${GREEN} $((free_mem / 1024)) MiB  ($free_mem kB) ${NC}\nSwap utilisée:\t${GREEN} $((used_swap / 1024)) MiB  ($used_swap kB) ${NC}"
+              echo ""
+              echo "----------------------------------"
+              echo -e "         ${GREEN}La swap est OK${NC}"
+              echo "----------------------------------"
+              echo ""
+              exit 0 ;;
+
+    [1-40])   echo -e "Mémoire libre:\t${YELLOW} $((free_mem / 1024)) MiB  ($free_mem kB) ${NC}\nSwap utilisée:\t${YELLOW} $((used_swap / 1024)) MiB  ($used_swap kB) ${NC}"
+              echo ""
+              echo "----------------------------------"
+              echo -e "         ${YELLOW}Nous sommes à $pourc_swap % d'utilisation de la swap. ${NC}" 
+              echo "----------------------------------"
+              echo ""
+              echo "Si vous annuler le script faite: " 
+              echo "watch -n1 free -m";;
+
+    [40-100]) echo -e "Mémoire libre:\t${RED} $((free_mem / 1024)) MiB  ($free_mem kB) ${NC}\nSwap utilisée:\t${RED} $((used_swap / 1024)) MiB  ($used_swap kB) ${NC}"
+              echo ""
+              echo "----------------------------------"
+              echo -e "         ${RED}Nous sommes à $pourc_swap % d'utilisation de la swap. ${NC}" 
+              echo "----------------------------------"
+              echo ""
+              echo "Si vous annuler le script faite: " 
+              echo "watch -n1 free -m";;
+    esac
+}
+
+# Display du menu -- swapon | swapoff
+printmenu() {
+echo -e "${GREEN}         --------------------------------------------------------- ${NC}"
+echo -e "${GREEN}         --------------------------------------------------------- ${NC}"
+echo -e "${GREEN}         |             Veuillez patientez                        | ${NC}"
+echo -e "${GREEN}         | La swap est en cours de déplacement dans la ram libre | ${NC}"
+echo -e "${GREEN}         --------------------------------------------------------- ${NC}"
+echo -e "${GREEN}         --------------------------------------------------------- ${NC}"
+echo    "                               $(date +"%H H %M Min %S Sec")"
+echo -e "Le PID : $(pgrep swapoff)"
+echo ""
+echo ""
+echo ""
+check
+echo ""
+echo ""
+
+}
+
+# Menu 
+menu() {
+    while true; do
+    printmenu
+    sleep 3
+    clear
+    done
+}
+
+# Fonction lancement
+lancement() {
+    if [ "$free_mem" -gt "$used_swap" ]
+    then 
+    echo -e "La mémoire disponible est suffisante pour réallouer le SWAP à la RAM. \n"
+    swapoff -a && swapon -a &
+    menu
+
+    else
+    echo -e "La mémoire libre : ${RED} $free_mem ${NC} n'est pas suffisante pour y injecter la swap : ${RED} $used_swap ${NC}"
+    echo -e "${RED}Veuillez contactez l'équipe N2 UNIX pour investigation.${NC}"
+    exit 1
+    fi
+}
+
+### Condition ###
+
+# Main -- si fs swap alors
+if [[ $swapnum != 0 ]]
+then
+    echo ""
+    echo -e "Il y a ${GREEN}$swapnum${NC} fs swap sur le serveur."
+    echo ""
+    sleep 2
+    clear
+    lancement
+
+elif [[ $swapnum = 0 ]]
+then
+    echo "Activation de la swap..."
+    swapon -a
+    sleep 2
+    echo -e "Il y a désormais ${GREEN}$swapnum${NC} fs swap sur le serveur."
+    check
+else
+    echo "Nous avons un souci sur la configuration swap."
+    echo -e "Il y a ${RED}$swapnum${NC} fs swap sur le serveur."
+    echo -e "${RED}Veuillez contactez l'équipe N2 UNIX pour investigation.${NC}"
+    exit 1
+fi
+
+
+

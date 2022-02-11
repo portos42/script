@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Script de résolution d'incident NTP Linux.
+# Auteur : Anthony TARENTA
+# Date : 20/01/2022
+
+#variables pour déterminer le service installé chrony/ntp:
+service_inst=$(systemctl list-units --type service 2>/dev/null | egrep --color "ntp|chrony" | awk -F' ' '{print $1}')
+
+service_ko =echo "ya un soucis là !";exit 1
+
+case $service_inst in
+	ntp* )
+	 echo -e "Le service ntp à pour serveur de temps : \n"
+ 	 ntpq -p 
+	 ;;
+	chrony* )
+	  echo -e "Le service chrony à pour serveur de temps : \n"
+	  chronyc sources
+	 ;;
+	* )
+	  echo "aucun service de temps n'est installé, veuillez voir avec le BTN1 / N2 UNIX"
+	 ;;
+esac
+echo salut
+echo ca va?
+service_ko
