@@ -13,6 +13,7 @@
 
 LANG=en_US.utf8
 
+
 ### Un peu de couleur :
 RED='\e[31m' # Rouge
 GREEN='\e[32m' # Vert
@@ -32,7 +33,8 @@ pourc_swap=$(($used_swap*100 / $total_swap))
 # Nombre de fs swap
 swapnum="$(( $(cat /proc/swaps|wc -l) - 1 ))"
 
-
+#log
+logFile=/var/log/swap-script.log
 
 
 ### Fonction ###
@@ -42,31 +44,37 @@ check(){
     case $pourc_swap in
     0)        echo -e "Mémoire libre:\t${GREEN} $((free_mem / 1024)) MiB  ($free_mem kB) ${NC}\nSwap utilisée:\t${GREEN} $((used_swap / 1024)) MiB  ($used_swap kB) ${NC}"
               echo ""
-              echo "----------------------------------"
-              echo -e "         ${GREEN}La swap est OK${NC}"
-              echo "----------------------------------"
+              echo "---------------------------------------------------------------"
+              log  "         ${GREEN}La swap est OK${NC}"
+              echo "---------------------------------------------------------------"
               echo ""
               exit 0 ;;
 
     [1-40])   echo -e "Mémoire libre:\t${YELLOW} $((free_mem / 1024)) MiB  ($free_mem kB) ${NC}\nSwap utilisée:\t${YELLOW} $((used_swap / 1024)) MiB  ($used_swap kB) ${NC}"
               echo ""
-              echo "----------------------------------"
-              echo -e "         ${YELLOW}Nous sommes à $pourc_swap % d'utilisation de la swap. ${NC}" 
-              echo "----------------------------------"
+              echo "---------------------------------------------------------------"
+              log  "         ${YELLOW}Nous sommes à $pourc_swap % d'utilisation de la swap. ${NC}" 
+              echo "---------------------------------------------------------------"
               echo ""
               echo "Si vous annuler le script faite: " 
               echo "watch -n1 free -m";;
 
     [40-100]) echo -e "Mémoire libre:\t${RED} $((free_mem / 1024)) MiB  ($free_mem kB) ${NC}\nSwap utilisée:\t${RED} $((used_swap / 1024)) MiB  ($used_swap kB) ${NC}"
               echo ""
-              echo "----------------------------------"
-              echo -e "         ${RED}Nous sommes à $pourc_swap % d'utilisation de la swap. ${NC}" 
-              echo "----------------------------------"
+              echo "---------------------------------------------------------------"
+              log  "         ${RED}Nous sommes à $pourc_swap % d'utilisation de la swap. ${NC}" 
+              echo "---------------------------------------------------------------"
               echo ""
               echo "Si vous annuler le script faite: " 
               echo "watch -n1 free -m";;
     esac
 }
+
+log () {    
+            echo -e "$(date '+%Y-%m-%d %H:%M:%S') | $1"	
+            echo -e "$(date '+%Y-%m-%d %H:%M:%S') | $1" >> $logFile 
+}
+
 
 # Display du menu -- swapon | swapoff
 printmenu() {
@@ -76,7 +84,7 @@ echo -e "${GREEN}         |             Veuillez patientez                      
 echo -e "${GREEN}         | La swap est en cours de déplacement dans la ram libre | ${NC}"
 echo -e "${GREEN}         --------------------------------------------------------- ${NC}"
 echo -e "${GREEN}         --------------------------------------------------------- ${NC}"
-echo    "                               $(date +"%H H %M Min %S Sec")"
+echo -e    "                               $(date +"%H H %M Min %S Sec")"
 echo -e "Le PID : $(pgrep swapoff)"
 echo ""
 echo ""
@@ -100,13 +108,13 @@ menu() {
 lancement() {
     if [ "$free_mem" -gt "$used_swap" ]
     then 
-    echo -e "La mémoire disponible est suffisante pour réallouer le SWAP à la RAM. \n"
+    log "La mémoire disponible est suffisante pour réallouer le SWAP à la RAM. \n"
     swapoff -a && swapon -a &
     menu
 
     else
-    echo -e "La mémoire libre : ${RED} $free_mem ${NC} n'est pas suffisante pour y injecter la swap : ${RED} $used_swap ${NC}"
-    echo -e "${RED}Veuillez contactez l'équipe N2 UNIX pour investigation.${NC}"
+    log "La mémoire libre : ${RED} $free_mem ${NC} n'est pas suffisante pour y injecter la swap : ${RED} $used_swap ${NC}"
+    log "${RED}Veuillez contactez l'équipe N2 UNIX pour investigation.${NC}"
     exit 1
     fi
 }
@@ -116,26 +124,23 @@ lancement() {
 # Main -- si fs swap alors
 if [[ $swapnum != 0 ]]
 then
-    echo ""
-    echo -e "Il y a ${GREEN}$swapnum${NC} fs swap sur le serveur."
-    echo ""
+    log ""
+    log "Il y a ${GREEN}$swapnum${NC} fs swap sur le serveur."
+    log ""
     sleep 2
     clear
     lancement
 
 elif [[ $swapnum = 0 ]]
 then
-    echo "Activation de la swap..."
+    log "Activation de la swap..."
     swapon -a
     sleep 2
-    echo -e "Il y a désormais ${GREEN}$swapnum${NC} fs swap sur le serveur."
+    log "Il y a désormais ${GREEN}$swapnum${NC} fs swap sur le serveur."
     check
 else
-    echo "Nous avons un souci sur la configuration swap."
-    echo -e "Il y a ${RED}$swapnum${NC} fs swap sur le serveur."
-    echo -e "${RED}Veuillez contactez l'équipe N2 UNIX pour investigation.${NC}"
+    log "Nous avons un souci sur la configuration swap."
+    log "Il y a ${RED}$swapnum${NC} fs swap sur le serveur."
+    log "${RED}Veuillez contactez l'équipe N2 UNIX pour investigation.${NC}"
     exit 1
 fi
-
-
-

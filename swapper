@@ -1,0 +1,130 @@
+#!/bin/bash
+
+#####################################################
+#                   swapper.sh
+#####################################################
+# Créé par Alexis FALA
+#####################################################
+# V 1.0
+# - Remplace script_swap.sh devenu obsolète
+#
+#
+#####################################################
+
+### LANGUE DISPLAY ###
+LANG=en_US.utf8
+######################
+
+### Chargement du fichier de configuration ###
+#. /etc/scripts_prod.conf
+logFile=/var/log/swapper.log
+##############################################
+
+############### Fonctions et variables ##############
+time_elapsed=0
+buffers_cache=0
+swap_use=$(free | grep "Swap" |awk -F' ' '{print $3}')
+
+script_name=$(echo $0 | awk -F'/' '{print $NF}')
+
+log () {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') | $script_name - $1"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') | $script_name - $1" >> $logFile
+}
+
+test_buffers () {
+    free | grep -G "^\-\/\+" > /dev/null
+
+    if [ $? = 0 ]; then
+        buffers_cache=1
+    fi
+
+    if [ $buffers_cache = 1 ] ; then
+        mem_avail=$(free | grep -G "^\-\/\+" | awk -F' ' '{print $4}')
+    elif [ $buffers_cache = 0 ] ; then
+        mem_avail=$(free | grep -G "Mem" | awk -F' ' '{print $7}')
+    fi
+}
+
+func_swapoff () {
+    swapoff -a & > /dev/null
+    pid_swapoff=$!
+    log "Swapoff lancé avec le PID $pid_swapoff"
+    while ps -ef | grep $pid_swapoff | grep -v "grep" > /dev/null; do
+        let "time_elapsed=$time_elapsed + 1"
+        rest=$(echo "$time_elapsed % 300" | bc)
+        if [ $rest = 0 ]; then
+            log "Swapoff toujours en cours depuis $time_elapsed secondes."
+        fi
+        sleep 1
+    done
+
+    wait $pid_swapoff
+    result_swapoff=$?
+
+    if [ $result_swapoff = 0 ]; then
+        log "Swapoff effectué avec succès, lancement du swapon."
+        func_swapon &
+        wait $!
+        result_swapon=$?
+    else
+        fail_swapoff
+    fi
+
+    return $result_swapon
+}
+
+func_swapon () {
+    log "Démarrage du swapon dans 30 secondes."
+    sleep 30
+    log "Réactivation du swap"
+    swapon -a & > /dev/null
+    wait $!
+    result_swapon=$?
+    return $result_swapon
+}
+
+fail_swapoff () {
+    log "Echec du swapoff | code retour : $result_swapoff"
+    exit 1
+}
+
+#####################################################
+
+####################### MAIN ########################
+log "############### LANCEMENT SWAPPER ###############"
+
+test_buffers
+
+log "Mémoire disponible : $(echo "$mem_avail/1024" | bc) KB"
+log "Utilisation du SWAP : $(echo "$swap_use/1024" | bc) KB"
+
+if [ $mem_avail -gt $swap_use ] ; then
+    func_swapoff &
+    wait $!
+    if [ $? = 0 ]; then
+        log "Swap libérée avec succès."
+        log "### FREE -M ###"
+        log "$(free -m | grep total)"
+        log "$(free -m | grep Mem)"
+        if [ $buffers_cache = 1 ]; then
+            log "$(free -m | grep -G '^\-\/\+')"
+        fi
+        log "$(free -m | grep 'Swap')"
+        log "###############"
+    else
+        log "Le swapon a échoué | Code retour $?"
+    fi
+else
+    log "Impossible de lancer la liberation du SWAP."
+    log "Processus utilisant le plus de SWAP : "
+    (echo "COMM PID SWAP"; for file in /proc/[1-9]*/status ; do awk '/^Pid|VmSwap|Name/{printf $2 " " $3}END{ print ""}' $file; done | grep kB | grep -wv "0 kB" | sort -rnk3 | head -10) | column -t
+fi
+
+log "Swappiness du serveur : $(cat /proc/sys/vm/swappiness)"
+
+log "################# FIN DU SCRIPT #################"
+
+exit 0
+#####################################################
+
